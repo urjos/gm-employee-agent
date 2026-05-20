@@ -1,0 +1,492 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Asistente IA — GM Ingenieros</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;600;700&family=Barlow:wght@300;400;500&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --bg:        #0d0f12;
+      --surface:   #13161b;
+      --panel:     #181c22;
+      --border:    #252b35;
+      --accent:    #f59e0b;
+      --accent2:   #d97706;
+      --text:      #e8eaf0;
+      --muted:     #6b7280;
+      --user-bg:   #1e2a1a;
+      --user-border:#3d6b2a;
+      --agent-bg:  #161c26;
+      --agent-border:#2a3d5c;
+      --radius:    6px;
+      --font-head: 'Barlow Condensed', sans-serif;
+      --font-body: 'Barlow', sans-serif;
+    }
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: var(--font-body);
+      font-weight: 400;
+      height: 100dvh;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    /* ── HEADER ── */
+    header {
+      background: var(--surface);
+      border-bottom: 2px solid var(--accent);
+      padding: 0 24px;
+      height: 58px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-shrink: 0;
+    }
+
+    .logo-group {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+    }
+
+    .logo-icon {
+      width: 36px;
+      height: 36px;
+      background: var(--accent);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 4px;
+    }
+
+    .logo-icon svg { width: 22px; height: 22px; }
+
+    .logo-text {
+      font-family: var(--font-head);
+      font-size: 20px;
+      font-weight: 700;
+      letter-spacing: 0.05em;
+      color: var(--text);
+    }
+
+    .logo-text span { color: var(--accent); }
+
+    .badge {
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      padding: 4px 10px;
+      font-family: var(--font-head);
+      font-size: 11px;
+      font-weight: 600;
+      letter-spacing: 0.1em;
+      color: var(--muted);
+      text-transform: uppercase;
+    }
+
+    /* ── STATUS BAR ── */
+    .status-bar {
+      background: var(--panel);
+      border-bottom: 1px solid var(--border);
+      padding: 6px 24px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex-shrink: 0;
+    }
+
+    .status-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: #6b7280;
+      transition: background 0.3s;
+    }
+    .status-dot.online  { background: #22c55e; box-shadow: 0 0 6px #22c55e66; }
+    .status-dot.loading { background: var(--accent); animation: pulse 1s infinite; }
+
+    @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.4} }
+
+    .status-text {
+      font-family: var(--font-head);
+      font-size: 12px;
+      font-weight: 600;
+      letter-spacing: 0.08em;
+      color: var(--muted);
+      text-transform: uppercase;
+    }
+
+    /* ── CHAT AREA ── */
+    #chat {
+      flex: 1;
+      overflow-y: auto;
+      padding: 24px;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+      scroll-behavior: smooth;
+    }
+
+    #chat::-webkit-scrollbar { width: 4px; }
+    #chat::-webkit-scrollbar-track { background: transparent; }
+    #chat::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+
+    /* ── MESSAGES ── */
+    .msg {
+      display: flex;
+      flex-direction: column;
+      max-width: 780px;
+      animation: slideIn 0.25s ease;
+    }
+
+    @keyframes slideIn { from{opacity:0;transform:translateY(8px)} to{opacity:1;transform:translateY(0)} }
+
+    .msg.user  { align-self: flex-end; align-items: flex-end; }
+    .msg.agent { align-self: flex-start; align-items: flex-start; }
+
+    .msg-meta {
+      font-family: var(--font-head);
+      font-size: 11px;
+      font-weight: 600;
+      letter-spacing: 0.1em;
+      color: var(--muted);
+      text-transform: uppercase;
+      margin-bottom: 6px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .msg-meta .dot {
+      width: 6px; height: 6px;
+      border-radius: 50%;
+    }
+    .msg.user  .dot { background: #22c55e; }
+    .msg.agent .dot { background: var(--accent); }
+
+    .bubble {
+      padding: 14px 18px;
+      border-radius: var(--radius);
+      font-size: 15px;
+      line-height: 1.65;
+      font-weight: 300;
+      white-space: pre-wrap;
+      word-break: break-word;
+    }
+
+    .msg.user  .bubble {
+      background: var(--user-bg);
+      border: 1px solid var(--user-border);
+      border-bottom-right-radius: 2px;
+    }
+
+    .msg.agent .bubble {
+      background: var(--agent-bg);
+      border: 1px solid var(--agent-border);
+      border-bottom-left-radius: 2px;
+    }
+
+    .msg.agent .bubble.thinking {
+      color: var(--muted);
+      font-style: italic;
+    }
+
+    .typing-dots span {
+      display: inline-block;
+      width: 6px; height: 6px;
+      border-radius: 50%;
+      background: var(--accent);
+      margin: 0 2px;
+      animation: bounce 1.2s infinite;
+    }
+    .typing-dots span:nth-child(2) { animation-delay: .2s; }
+    .typing-dots span:nth-child(3) { animation-delay: .4s; }
+    @keyframes bounce { 0%,80%,100%{transform:translateY(0)} 40%{transform:translateY(-6px)} }
+
+    /* ── WELCOME ── */
+    .welcome {
+      margin: auto;
+      text-align: center;
+      padding: 40px 20px;
+      opacity: 0.7;
+    }
+    .welcome svg { width: 48px; height: 48px; color: var(--accent); margin-bottom: 16px; }
+    .welcome h2 {
+      font-family: var(--font-head);
+      font-size: 26px;
+      font-weight: 700;
+      letter-spacing: 0.05em;
+      color: var(--text);
+      margin-bottom: 8px;
+    }
+    .welcome p { font-size: 14px; color: var(--muted); line-height: 1.6; max-width: 340px; margin: 0 auto; }
+
+    /* ── INPUT AREA ── */
+    .input-area {
+      background: var(--surface);
+      border-top: 1px solid var(--border);
+      padding: 16px 24px;
+      flex-shrink: 0;
+    }
+
+    .input-row {
+      display: flex;
+      gap: 10px;
+      align-items: flex-end;
+      max-width: 900px;
+      margin: 0 auto;
+    }
+
+    #input {
+      flex: 1;
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      color: var(--text);
+      font-family: var(--font-body);
+      font-size: 15px;
+      font-weight: 300;
+      padding: 12px 16px;
+      resize: none;
+      min-height: 48px;
+      max-height: 140px;
+      outline: none;
+      transition: border-color 0.2s;
+      line-height: 1.5;
+    }
+    #input::placeholder { color: var(--muted); }
+    #input:focus { border-color: var(--accent); }
+
+    #send-btn {
+      background: var(--accent);
+      color: #000;
+      border: none;
+      border-radius: var(--radius);
+      width: 48px;
+      height: 48px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: background 0.2s, transform 0.1s;
+      flex-shrink: 0;
+    }
+    #send-btn:hover:not(:disabled) { background: var(--accent2); }
+    #send-btn:active:not(:disabled) { transform: scale(0.95); }
+    #send-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+    #send-btn svg { width: 20px; height: 20px; }
+
+    .input-hint {
+      text-align: center;
+      font-size: 11px;
+      color: var(--muted);
+      margin-top: 8px;
+      font-family: var(--font-head);
+      letter-spacing: 0.05em;
+    }
+
+    /* ── ERROR ── */
+    .error-msg .bubble {
+      background: #1f0f0f;
+      border-color: #7f1d1d;
+      color: #fca5a5;
+    }
+
+    /* ── SCROLLBAR ── */
+    textarea::-webkit-scrollbar { width: 4px; }
+    textarea::-webkit-scrollbar-thumb { background: var(--border); }
+  </style>
+</head>
+<body>
+
+<header>
+  <div class="logo-group">
+    <div class="logo-icon">
+      <svg viewBox="0 0 24 24" fill="none" stroke="#000" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+        <polygon points="12 2 2 7 12 12 22 7 12 2"/>
+        <polyline points="2 17 12 22 22 17"/>
+        <polyline points="2 12 12 17 22 12"/>
+      </svg>
+    </div>
+    <span class="logo-text">GM <span>INGENIEROS</span></span>
+  </div>
+  <div class="badge">🔒 Uso Interno — Solo Personal del Proyecto</div>
+</header>
+
+<div class="status-bar">
+  <div class="status-dot" id="status-dot"></div>
+  <span class="status-text" id="status-text">Iniciando conexión…</span>
+</div>
+
+<div id="chat">
+  <div class="welcome" id="welcome">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+      <circle cx="12" cy="12" r="10"/>
+      <path d="M12 8v4l3 3"/>
+    </svg>
+    <h2>Asistente del Proyecto</h2>
+    <p>Haz tu consulta para comenzar. Este canal es exclusivo para el equipo interno de GM Ingenieros.</p>
+  </div>
+</div>
+
+<div class="input-area">
+  <div class="input-row">
+    <textarea id="input" placeholder="Escribe tu consulta…" rows="1"></textarea>
+    <button id="send-btn" disabled title="Enviar">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+        <line x1="22" y1="2" x2="11" y2="13"/>
+        <polygon points="22 2 15 22 11 13 2 9 22 2"/>
+      </svg>
+    </button>
+  </div>
+  <div class="input-hint">Enter para enviar &nbsp;·&nbsp; Shift+Enter para nueva línea</div>
+</div>
+
+<script>
+  const chat     = document.getElementById("chat");
+  const input    = document.getElementById("input");
+  const sendBtn  = document.getElementById("send-btn");
+  const statusDot  = document.getElementById("status-dot");
+  const statusText = document.getElementById("status-text");
+  const welcome    = document.getElementById("welcome");
+
+  let threadId = null;
+  let busy     = false;
+
+  // ── Auto-resize textarea ──
+  input.addEventListener("input", () => {
+    input.style.height = "auto";
+    input.style.height = Math.min(input.scrollHeight, 140) + "px";
+  });
+
+  // ── Enter to send ──
+  input.addEventListener("keydown", (e) => {
+    if (e.key === "Enter" && !e.shiftKey) {
+      e.preventDefault();
+      if (!busy && input.value.trim()) sendMessage();
+    }
+  });
+
+  sendBtn.addEventListener("click", () => {
+    if (!busy && input.value.trim()) sendMessage();
+  });
+
+  // ── Init: crear thread ──
+  async function init() {
+    setStatus("loading", "Conectando con el agente…");
+    try {
+      const res  = await fetch("/api/thread", { method: "POST" });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error);
+      threadId = data.threadId;
+      setStatus("online", "Agente conectado · Listo");
+      sendBtn.disabled = false;
+      input.focus();
+    } catch (err) {
+      setStatus("error", "Error de conexión con el agente");
+      appendMessage("agent", `⚠️ No se pudo conectar con el agente: ${err.message}`, true);
+    }
+  }
+
+  async function sendMessage() {
+    const text = input.value.trim();
+    if (!text || busy || !threadId) return;
+
+    busy = true;
+    sendBtn.disabled = true;
+    input.value = "";
+    input.style.height = "auto";
+
+    hideWelcome();
+    appendMessage("user", text);
+    const thinkingEl = appendThinking();
+    setStatus("loading", "El agente está procesando…");
+
+    try {
+      const res  = await fetch("/api/message", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ threadId, message: text }),
+      });
+      const data = await res.json();
+      thinkingEl.remove();
+      if (!res.ok) throw new Error(data.error);
+      appendMessage("agent", data.response);
+      setStatus("online", "Agente conectado · Listo");
+    } catch (err) {
+      thinkingEl.remove();
+      appendMessage("agent", `⚠️ Error: ${err.message}`, true);
+      setStatus("online", "Agente conectado · Listo");
+    } finally {
+      busy = false;
+      sendBtn.disabled = false;
+      input.focus();
+    }
+  }
+
+  function appendMessage(role, text, isError = false) {
+    const wrap = document.createElement("div");
+    wrap.className = `msg ${role}${isError ? " error-msg" : ""}`;
+
+    const meta = document.createElement("div");
+    meta.className = "msg-meta";
+    const dot = document.createElement("span");
+    dot.className = "dot";
+    meta.appendChild(dot);
+    meta.appendChild(document.createTextNode(role === "user" ? "Tú" : "Agente GM"));
+    wrap.appendChild(meta);
+
+    const bubble = document.createElement("div");
+    bubble.className = "bubble";
+    bubble.textContent = text;
+    wrap.appendChild(bubble);
+
+    chat.appendChild(wrap);
+    chat.scrollTop = chat.scrollHeight;
+    return wrap;
+  }
+
+  function appendThinking() {
+    const wrap = document.createElement("div");
+    wrap.className = "msg agent";
+
+    const meta = document.createElement("div");
+    meta.className = "msg-meta";
+    const dot = document.createElement("span");
+    dot.className = "dot";
+    meta.appendChild(dot);
+    meta.appendChild(document.createTextNode("Agente GM"));
+    wrap.appendChild(meta);
+
+    const bubble = document.createElement("div");
+    bubble.className = "bubble thinking";
+    bubble.innerHTML = `Procesando <span class="typing-dots"><span></span><span></span><span></span></span>`;
+    wrap.appendChild(bubble);
+
+    chat.appendChild(wrap);
+    chat.scrollTop = chat.scrollHeight;
+    return wrap;
+  }
+
+  function hideWelcome() {
+    if (welcome) { welcome.style.display = "none"; }
+  }
+
+  function setStatus(state, text) {
+    statusText.textContent = text;
+    statusDot.className = "status-dot";
+    if (state === "online")  statusDot.classList.add("online");
+    if (state === "loading") statusDot.classList.add("loading");
+  }
+
+  init();
+</script>
+</body>
+</html>
